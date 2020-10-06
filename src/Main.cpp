@@ -11,8 +11,6 @@ void Print(const nstd::Vector<int>& vec) {
 int main() {
 	nstd::Vector<int> vec1{ -3, -460, -22, 46, 100 };
 	nstd::Vector<int> vec2;
-
-	vec2.assign(vec1.begin() + 1, vec1.end() - 2);
 	
 	Print(vec1);
 	Print(vec2);
