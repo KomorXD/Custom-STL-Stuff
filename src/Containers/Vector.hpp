@@ -450,6 +450,11 @@ namespace nstd {
 				return m_pData;
 			}
 
+			//Returns the const pointer to the underlying container
+			const T* data() const {
+				return m_pData;
+			}
+
 			//Returns an iterator to the beginning of a vector
 			Iterator begin() {
 				return Iterator(m_pData);
@@ -489,11 +494,6 @@ namespace nstd {
 			ConstIterator crend() {
 				return ConstIterator(m_pData + m_uSize - 1);
 			}
-
-			//Returns the const pointer to the underlying container
-			const T* data() const {
-				return m_pData;
-			}
 			
 			//Returns true if this vector is empty, false otherwise
 			bool empty() const {
@@ -528,6 +528,185 @@ namespace nstd {
 					m_pData[i].~T();
 
 				m_uSize = 0;
+			}
+
+			//Reallocates the memory block if necessary and shifts a part of it to make a space for a 'value' and copies it
+			Iterator insert(Iterator pos, const T& value) {
+				size_t len = pos - begin();
+
+				if (m_uSize >= m_uCapacity)
+					ReAlloc(m_uCapacity + m_uCapacity / 2);
+
+				memmove_s(m_pData + len + 1,
+						  m_uCapacity * sizeof(T) - (len + 1) * sizeof(T),
+						  m_pData + len,
+						  (m_uSize - len) * sizeof(T));
+
+				m_pData[len] = value;
+				m_uSize++;
+
+				return Iterator(m_pData + len);
+			}
+
+			//Reallocates the memory block if necessary and shifts a part of it to make a space for a 'value' and moves it
+			Iterator insert(Iterator pos, T&& value) {
+				size_t len = pos - begin();
+
+				if (m_uSize >= m_uCapacity)
+					ReAlloc(m_uCapacity + m_uCapacity / 2);
+
+				memmove_s(m_pData + len + 1,
+						  m_uCapacity * sizeof(T) - (len + 1) * sizeof(T),
+						  m_pData + len,
+						  (m_uSize - len) * sizeof(T));
+
+				m_pData[len] = std::move(value);
+				m_uSize++;
+
+				return Iterator(m_pData + len);
+			}
+
+			//Reallocates the memory block if necessary and shifts a part of it to make a space for a range of [pos; pos + uCount) and copies it
+			Iterator insert(Iterator pos, size_t uCount, const T& value) {
+				size_t len = pos - begin();
+
+				if (m_uSize + uCount - 1 >= m_uCapacity)
+					ReAlloc( m_uSize + uCount > m_uCapacity + m_uCapacity / 2 ? m_uSize + uCount : m_uCapacity + m_uCapacity / 2 );
+
+				memmove_s(m_pData + len + uCount,
+						  m_uCapacity * sizeof(T) - (len + uCount - 1) * sizeof(T),
+						  m_pData + len,
+						  (m_uSize - len) * sizeof(T));
+
+				for (size_t i = len; i < len + uCount; ++i)
+					m_pData[i] = value;
+
+				m_uSize += uCount;
+
+				return Iterator(m_pData + len);
+			}
+
+			//Reallocates the memory block if necessary and shifts a part of it to make a space for a range of [pos; pos + uCount) and moves it
+			Iterator insert(Iterator pos, size_t uCount, T&& value) {
+				size_t len = pos - begin();
+
+				if (m_uSize + uCount - 1 >= m_uCapacity)
+					ReAlloc( m_uSize + uCount > m_uCapacity + m_uCapacity / 2 ? m_uSize + uCount : m_uCapacity + m_uCapacity / 2 );
+
+				memmove_s(m_pData + len + uCount,
+						  m_uCapacity * sizeof(T) - (len + uCount - 1) * sizeof(T),
+						  m_pData + len,
+						  (m_uSize - len) * sizeof(T));
+
+				for (size_t i = len; i < len + uCount; ++i)
+					m_pData[i] = std::move(value);
+
+				m_uSize += uCount;
+
+				return Iterator(m_pData + len);
+			}
+
+			//Reallocates the memory block if necessary and shifts a part of it to make a space for a range of [first; last) and copies it
+			Iterator insert(Iterator pos, Iterator first, Iterator last) {
+				size_t len  = pos - begin();
+				size_t size = last - first;
+
+				if (m_uSize + size >= m_uCapacity)
+					ReAlloc(m_uSize + size > m_uCapacity + m_uCapacity / 2 ? m_uSize + size : m_uCapacity + m_uCapacity / 2);
+
+				memmove_s(m_pData + len + size,
+						  m_uCapacity * sizeof(T) - (len + size - 1) * sizeof(T),
+						  m_pData + len,
+						  (m_uSize - len) * sizeof(T));
+
+				size_t i = len;
+
+				for (auto it = first; it != last; ++it, ++i)
+					m_pData[i] = *it;
+
+				m_uSize += size;
+
+				return Iterator(m_pData + len);
+			}
+
+			//Reallocates the memory block if necessary and shifts a part of it to make a space for a list and copies it
+			Iterator insert(Iterator pos, std::initializer_list<T> list) {
+				size_t len = pos - begin();
+				size_t size = list.end() - list.begin();
+
+				if (m_uSize + size >= m_uCapacity)
+					ReAlloc(m_uSize + size > m_uCapacity + m_uCapacity / 2 ? m_uSize + size : m_uCapacity + m_uCapacity / 2);
+
+				memmove_s(m_pData + len + size,
+						  m_uCapacity * sizeof(T) - (len + size - 1) * sizeof(T),
+						  m_pData + len,
+						  (m_uSize - len) * sizeof(T));
+				
+				size_t i = len;
+
+				for (auto it = list.begin(); it != list.end(); ++it, ++i)
+					m_pData[i] = std::move(*it);
+
+				m_uSize += size;
+
+				return Iterator(m_pData + len);
+			}
+
+			//Reallocates the memory block if necessary and shifts a part of it to make a space for an emplacement with given args
+			template<typename... Args>
+			Iterator emplace(Iterator pos, Args&&... args) {
+				size_t len = pos - begin();
+
+				if (m_uSize >= m_uCapacity)
+					ReAlloc(m_uCapacity + m_uCapacity / 2);
+
+				memmove_s(m_pData + len + 1,
+						  m_uCapacity * sizeof(T) - (len + 1) * sizeof(T),
+						  m_pData + len,
+						  (m_uSize - len) * sizeof(T));
+
+				new(m_pData + len) T(std::forward<Args>(args)...);
+				m_uSize++;
+
+				return Iterator(m_pData + len);
+			}
+
+			//Erases an element at the position that pos point to
+			Iterator erase(Iterator pos) {
+				if (pos < begin() || pos >= end())
+					return Iterator(nullptr);
+
+				size_t len = pos - begin();
+
+				(*pos).~T();
+				memmove_s(m_pData + len,
+						  (m_uCapacity - len) * sizeof(T),
+						  m_pData + len + 1,
+						  (m_uSize - len) * sizeof(T));
+
+				m_uSize--;
+
+				return Iterator(m_pData + len);
+			}
+
+			Iterator erase(Iterator first, Iterator last) {
+				if (first > last || first < begin() || last > end())
+					return Iterator(nullptr);
+
+				size_t len  = first - begin();
+				size_t size = last - first;
+
+				for (auto it = first; it != last; ++it)
+					(*it).~T();
+
+				memmove_s(m_pData + len,
+						  (m_uCapacity - len) * sizeof(T),
+						  m_pData + len + size,
+						  (m_uSize - len) * sizeof(T));
+
+				m_uSize -= size;
+
+				return Iterator(m_pData + len);
 			}
 
 			//Copies the given value and puts it on the end of the container. Reallocates the entire block if necessary
