@@ -307,6 +307,9 @@ namespace nstd {
 
 			//Clears the current vector, copies other vector into this one
 			Vector& operator =(const Vector& other) {
+				if (this == &other)
+					return *this;
+
 				clear();
 				ReAlloc(other.m_uCapacity);
 
@@ -320,6 +323,9 @@ namespace nstd {
 
 			//Clears the current vector, moves other vector into this one and leaves a hollow object
 			Vector& operator =(Vector&& other) noexcept {
+				if (this == &other)
+					return *this;
+
 				clear();
 
 				m_pData		= other.m_pData;
@@ -576,6 +582,9 @@ namespace nstd {
 
 			//Swaps with the given container, not invoking any copy, move or swap operations
 			void swap(Vector<T>& other) {
+				if (this == &other)
+					return;
+
 				std::swap(m_pData,	   other.m_pData);
 				std::swap(m_uSize,	   other.m_uSize);
 				std::swap(m_uCapacity, other.m_uCapacity);
