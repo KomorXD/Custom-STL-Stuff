@@ -9,12 +9,12 @@ void Print(const nstd::Vector<int>& vec) {
 }
 
 int main() {
-	nstd::Vector<int> vec1{ -3, -460, -22, 46, 100 };
-	nstd::Vector<int> vec2;
-	
-	Print(vec1);
-	Print(vec2);
+	nstd::Vector<int> vec1{ 1, 2, 3, 4, 5 };
 
+	vec1.erase(vec1.begin() + 2, vec1.end() - 1);
+
+	Print(vec1);
+	
 	std::cin.get();
 
 	return 0;
