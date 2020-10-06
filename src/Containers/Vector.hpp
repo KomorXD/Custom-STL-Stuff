@@ -599,7 +599,7 @@ namespace nstd {
 				for (size_t i = 0; i < m_uSize; ++i)
 					pNewBlock[i] = std::move(m_pData[i]);
 
-				//::operator delete(m_pData, m_uCapacity * sizeof(T));
+				::operator delete(m_pData, m_uCapacity * sizeof(T));
 				m_pData = pNewBlock;
 				m_uCapacity = uNewCap;
 			}
