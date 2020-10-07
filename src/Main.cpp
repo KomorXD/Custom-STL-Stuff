@@ -1,5 +1,6 @@
 #include <iostream>
 #include "Containers/Vector.hpp"
+#include "Utils/Allocator.hpp"
 
 void Print(const nstd::Vector<int>& vec) {
 	for (size_t i = 0; i < vec.size(); ++i)
@@ -11,9 +12,11 @@ void Print(const nstd::Vector<int>& vec) {
 int main() {
 	nstd::Vector<int> vec1{ 1, 2, 3, 4, 5 };
 
-	vec1.erase(vec1.begin() + 2, vec1.end() - 1);
+	vec1.emplace(vec1.begin() + 3, 70);
 
 	Print(vec1);
+
+	vec1.clear();
 	
 	std::cin.get();
 
