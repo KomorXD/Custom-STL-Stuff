@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <initializer_list>
 
-#include "../Utils/Allocator.hpp"
+#include "../Memory/Allocator.hpp"
 
 namespace nstd {
 	template<typename Vector>

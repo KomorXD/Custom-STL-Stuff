@@ -1,6 +1,5 @@
 #include <iostream>
 #include "Containers/Vector.hpp"
-#include "Utils/Allocator.hpp"
 
 void Print(const nstd::Vector<int>& vec) {
 	for (size_t i = 0; i < vec.size(); ++i)
