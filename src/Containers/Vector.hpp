@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <initializer_list>
 
+#include "../Utils/Allocator.hpp"
+
 namespace nstd {
 	template<typename Vector>
 	class VectorIterator {
@@ -240,12 +242,12 @@ namespace nstd {
 }
 
 namespace nstd {
-	template<typename T>
+	template<typename T, typename Alloc = Allocator<T>>
 	class Vector {
 		public:
 			using ValueType		= T;
-			using Iterator		= VectorIterator<Vector<T>>;
-			using ConstIterator = ConstVectorIterator<Vector<T>>;
+			using Iterator		= VectorIterator<Vector<T, Alloc>>;
+			using ConstIterator = ConstVectorIterator<Vector<T, Alloc>>;
 			
 		public:
 			//Default constructor, allocates 2 * sizeof(T) bytes of memory on the heap
@@ -302,7 +304,7 @@ namespace nstd {
 
 			//Destructor, frees used space on the heap
 			~Vector() {
-				::operator delete(m_pData, m_uCapacity * sizeof(T));
+				m_Allocator.deallocate(m_pData, m_uCapacity);
 			}
 
 			//Clears the current vector, copies other vector into this one
@@ -525,7 +527,7 @@ namespace nstd {
 			//Explicitly calls destructor of every element and sets the m_uSize to 0, therefore cleaning the container
 			void clear() {
 				for (size_t i = 0; i < m_uSize; ++i)
-					m_pData[i].~T();
+					m_Allocator.destroy(m_pData + i);
 
 				m_uSize = 0;
 			}
@@ -665,7 +667,7 @@ namespace nstd {
 						  m_pData + len,
 						  (m_uSize - len) * sizeof(T));
 
-				new(m_pData + len) T(std::forward<Args>(args)...);
+				m_Allocator.construct(m_pData + len, std::forward<Args>(args)...);
 				m_uSize++;
 
 				return Iterator(m_pData + len);
@@ -677,8 +679,8 @@ namespace nstd {
 					return Iterator(nullptr);
 
 				size_t len = pos - begin();
-
-				(*pos).~T();
+				
+				m_Allocator.destroy(pos);
 				memmove_s(m_pData + len,
 						  (m_uCapacity - len) * sizeof(T),
 						  m_pData + len + 1,
@@ -696,8 +698,8 @@ namespace nstd {
 				size_t len  = first - begin();
 				size_t size = last - first;
 
-				for (auto it = first; it != last; ++it)
-					(*it).~T();
+				for (size_t i = 0; i < size; ++i)
+					m_Allocator.destroy(m_pData + len + i);
 
 				memmove_s(m_pData + len,
 						  (m_uCapacity - len) * sizeof(T),
@@ -741,7 +743,7 @@ namespace nstd {
 			//If there are any elements, calls a destructor of the last element and decrements the size of a container
 			void pop_back() {
 				if (m_uSize > 0)
-					m_pData[m_uSize--].~T();
+					m_Allocator.destroy(m_pData + (m_uSize--));
 			}
 
 			//Resizes the container. If necessary, will reallocate the memory block to a proper size
@@ -773,12 +775,12 @@ namespace nstd {
 			//Creates a new block of memory, moves/copies the m_pData block into it, deletes m_pData
 			//and assigns m_pData to the new block, m_uCapacity to the uNewCap
 			void ReAlloc(size_t uNewCap) {
-				T* pNewBlock = (T*)::operator new(uNewCap * sizeof(T));
+				T* pNewBlock = m_Allocator.allocate(uNewCap);
 
 				for (size_t i = 0; i < m_uSize; ++i)
 					pNewBlock[i] = std::move(m_pData[i]);
 
-				::operator delete(m_pData, m_uCapacity * sizeof(T));
+				m_Allocator.deallocate(m_pData, m_uCapacity);
 				m_pData = pNewBlock;
 				m_uCapacity = uNewCap;
 			}
@@ -787,6 +789,7 @@ namespace nstd {
 			T*	   m_pData;
 			size_t m_uSize	   = 0;
 			size_t m_uCapacity = 0;
+			Alloc  m_Allocator;
 	};
 }
 
